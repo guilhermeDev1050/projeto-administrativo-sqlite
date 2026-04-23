@@ -72,7 +72,7 @@ class SalvarDadosNFView(APIView):
 
             # 3. Criando o Movimento (Regra 4 do PDF)
             movimento = MovimentoContas.objects.create(
-                tipo='PAGAR',
+                tipo='A PAGAR',
                 numero_nota=dados['Número da Nota Fiscal'],
                 data_emissao=self.formatar_data(dados['Data de Emissão']),
                 valor_total=valor_final,
