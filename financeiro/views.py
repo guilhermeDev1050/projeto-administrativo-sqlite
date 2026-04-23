@@ -9,9 +9,12 @@ class VerificarDadosNFView(APIView):
     def post(self, request):
         dados = request.data
         try:
-            # Pegando os dados no formato do seu extrator (Etapa 1)
+            # Pegando os dados no formato do extrator (Etapa 1)
             cnpj_forn = dados['Fornecedor']['CNPJ']
-            doc_fat = dados['Faturado']['CPF'] or dados['Faturado']['CNPJ']
+
+            # Ajuste dinâmico para CPF ou CNPJ do faturado
+            doc_fat = dados['Faturado'].get('CPF') or dados['Faturado'].get('CNPJ')
+
             # Pega a primeira categoria da lista de despesas
             categoria_nome = dados['Classificação da DESPESA'][0]['categoria']
 
@@ -41,20 +44,19 @@ class SalvarDadosNFView(APIView):
     def post(self, request):
         dados = request.data
         try:
-            # Extração dos dados no formato da Etapa 1
+            # 1. Extração dos dados
             cnpj_forn = dados['Fornecedor']['CNPJ']
             nome_forn = dados['Fornecedor']['Razão Social']
 
-            doc_fat = dados['Faturado']['CPF'] or dados['Faturado']['CNPJ']
+            doc_fat = dados['Faturado'].get('CPF') or dados['Faturado'].get('CNPJ')
             nome_fat = dados['Faturado']['Nome Completo']
 
             categoria_nome = dados['Classificação da DESPESA'][0]['categoria']
 
-            # Tratamento de valores: Transforma "3.254,07" em 3254.07 (float)
-            valor_str = dados['ValorTotal'].replace('.', '').replace(',', '.')
-            valor_final = float(valor_str)
+            # Tratamento de valor total
+            valor_final = float(dados['ValorTotal'].replace('.', '').replace(',', '.'))
 
-            # Criando ou recuperando entidades
+            # 2. Criando ou recuperando entidades (Regras 1, 2 e 3 do PDF)
             fornecedor, _ = Pessoa.objects.get_or_create(
                 cnpj_cpf=cnpj_forn,
                 defaults={'nome_razao_social': nome_forn, 'tipo': 'FORNECEDOR'}
@@ -68,7 +70,7 @@ class SalvarDadosNFView(APIView):
                 defaults={'tipo': 'DESPESA'}
             )
 
-            # Criando o Movimento
+            # 3. Criando o Movimento (Regra 4 do PDF)
             movimento = MovimentoContas.objects.create(
                 tipo='PAGAR',
                 numero_nota=dados['Número da Nota Fiscal'],
@@ -78,24 +80,25 @@ class SalvarDadosNFView(APIView):
             )
             movimento.classificacoes.add(despesa)
 
-            # Criando a Parcela (usando o primeiro item da lista de parcelas)
-            # Em vez de criar apenas a parcela [0], fazemos um loop:
+            # 4. Criando TODAS as Parcelas (Regra: Uma ou mais parcelas)
             for parc in dados['Parcelas']:
                 ParcelaContas.objects.create(
                     movimento=movimento,
-                    identificacao_unica=str(uuid4()),
+                    identificacao_unica=str(uuid4()),  # Requisito: Identificacao (UNICA)
                     numero_parcela=int(parc['numero']),
                     valor_parcela=float(parc['valor'].replace('.', '').replace(',', '.')),
                     data_vencimento=self.formatar_data(parc['vencimento']),
                     situacao='PENDENTE'
                 )
 
+            # 5. Informar ao usuário (Regra 5 do PDF)
             return Response({"message": "Registro lançado com sucesso!"}, status=status.HTTP_201_CREATED)
+
         except Exception as e:
             return Response({"message": f"Erro ao processar: {str(e)}"}, status=400)
 
     def formatar_data(self, data_str):
-        # Substitui hifens por barras para padronizar e depois quebra
+        # Padroniza hifens para barras e inverte para o padrão do banco (YYYY-MM-DD)
         data_padronizada = data_str.replace('-', '/')
-        dia, mes, ano = data_padronizada.split('/')
-        return f"{ano}-{mes}-{dia}"
+        partes = data_padronizada.split('/')
+        return f"{partes[2]}-{partes[1]}-{partes[0]}"
