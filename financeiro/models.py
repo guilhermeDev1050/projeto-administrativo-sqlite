@@ -43,8 +43,8 @@ class Classificacao(models.Model):
 
 class MovimentoContas(models.Model):
     TIPOS_MOVIMENTO = [
-        ('PAGAR', 'Pagar'),
-        ('RECEBER', 'Receber')
+        ('A PAGAR', 'A pagar'),
+        ('A RECEBER', 'A receber')
     ]
 
     class Meta:

@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
             name='MovimentoContas',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('tipo', models.CharField(choices=[('PAGAR', 'Pagar'), ('RECEBER', 'Receber')], max_length=10)),
+                ('tipo', models.CharField(choices=[('A PAGAR', 'A pagar'), ('A RECEBER', 'A receber')], max_length=10)),
                 ('numero_nota', models.CharField(max_length=50)),
                 ('data_emissao', models.DateField()),
                 ('valor_total', models.DecimalField(decimal_places=2, max_digits=15)),
