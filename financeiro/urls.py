@@ -1,7 +1,6 @@
 from django.urls import path
-from .views import VerificarDadosNFView, SalvarDadosNFView # Adicione aqui
+from .views import ConsultaRAGView # Importe a nova View
 
 urlpatterns = [
-    path('verificar-nf/', VerificarDadosNFView.as_view(), name='verificar_nf'),
-    path('salvar-nf/', SalvarDadosNFView.as_view(), name='salvar_nf'), # Nova rota
+    path('api/consulta-rag/', ConsultaRAGView.as_view(), name='consulta_rag'), # ◄ Certifique-se de que tem a / aqui
 ]

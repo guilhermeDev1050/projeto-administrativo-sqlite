@@ -1,117 +1,140 @@
+import os
+from google import genai
+import numpy as np  # ◄ Import da biblioteca matemática para cálculo de vetores
+from google.genai import types  # Caso precise de tipos futuramente
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Pessoa, Classificacao, MovimentoContas, ParcelaContas
 from uuid import uuid4
 
-
-class VerificarDadosNFView(APIView):
+class ConsultaRAGView(APIView):
     def post(self, request):
-        dados = request.data
+        pergunta = request.data.get('pergunta', '')
+        metodo = request.data.get('metodo', 'simples')  # 'simples' ou 'embeddings'
+
+        if not pergunta:
+            return Response({"error": "A pergunta não pode estar vazia."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Inicialização do Gemini
         try:
-            # Pegando os dados no formato do extrator (Etapa 1)
-            cnpj_forn = dados['Fornecedor']['CNPJ']
+            api_key = os.environ.get("GEMINI_API_KEY")
+            client = genai.Client(api_key=api_key)
+        except Exception as e:
+            return Response({"error": f"Falha ao inicializar o cliente Gemini: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # Ajuste dinâmico para CPF ou CNPJ do faturado
-            doc_fat = dados['Faturado'].get('CPF') or dados['Faturado'].get('CNPJ')
-
-            # Pega a primeira categoria da lista de despesas
-            categoria_nome = dados['Classificação da DESPESA'][0]['categoria']
-
-            fornecedor = Pessoa.objects.filter(cnpj_cpf=cnpj_forn).first()
-            faturado = Pessoa.objects.filter(cnpj_cpf=doc_fat).first()
-            despesa = Classificacao.objects.filter(descricao=categoria_nome).first()
-
+        # Buscamos os dados do banco UMA VEZ para que ambos os métodos possam utilizar
+        try:
+            movimentos = list(MovimentoContas.objects.all().order_by('-id')[:20])
+        except Exception as e:
             return Response({
-                "fornecedor": {
-                    "nome": dados['Fornecedor']['Razão Social'],
-                    "status": f"EXISTE - ID: {fornecedor.id}" if fornecedor else "NÃO EXISTE"
-                },
-                "faturado": {
-                    "nome": dados['Faturado']['Nome Completo'],
-                    "status": f"EXISTE - ID: {faturado.id}" if faturado else "NÃO EXISTE"
-                },
-                "despesa": {
-                    "descricao": categoria_nome,
-                    "status": f"EXISTE - ID: {despesa.id}" if despesa else "NÃO EXISTE"
-                }
-            })
-        except Exception as e:
-            return Response({"error": f"Formato de JSON inválido: {str(e)}"}, status=400)
+                "error": f"Erro ao consultar a tabela MovimentoContas. Verifique se as colunas existem. Detalhe: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        if not movimentos:
+            return Response({"resposta": "Nenhum registro de movimentação financeira foi localizado no banco de dados atualmente."}, status=status.HTTP_200_OK)
 
-class SalvarDadosNFView(APIView):
-    def post(self, request):
-        dados = request.data
+        contexto_banco = ""
+
+        # =========================================================================
+        # ABORDAGEM 1: RAG SIMPLES (Busca de Metadados Textuais via SQL)
+        # =========================================================================
+        if metodo == 'simples':
+            contexto_banco = "DADOS ATUAIS DO SISTEMA FINANCEIRO:\n"
+            for mov in movimentos[:10]:
+                if hasattr(mov, 'pessoa') and mov.pessoa:
+                    nome_fornecedor = getattr(mov.pessoa, 'nome_razao_social', getattr(mov.pessoa, 'nome', 'Fornecedor Anônimo'))
+                else:
+                    nome_fornecedor = "Não identificado"
+
+                num_nota = getattr(mov, 'numero_nota', 'S/N')
+                val_total = getattr(mov, 'valor_total', '0.00')
+                tipo_mov = getattr(mov, 'tipo', 'A PAGAR')
+
+                contexto_banco += f"- Nota: {num_nota} | Fornecedor: {nome_fornecedor} | Valor Total: R$ {val_total} | Tipo: {tipo_mov}\n"
+
+        # =========================================================================
+        # ABORDAGEM 2: RAG EMBEDDINGS (Busca Semântica Avançada) 🚀
+        # =========================================================================
+        elif metodo == 'embeddings':
+            try:
+                # 1. Gerar o vetor matemático para a PERGUNTA do usuário
+                query_embedding_response = client.models.embed_content(
+                    model='gemini-embedding-001',  # ◄ ALTERE AQUI
+                    contents=pergunta
+                )
+                vector_pergunta = np.array(query_embedding_response.embeddings[0].values)
+
+                trechos_e_scores = []
+
+                # 2. Varrer os registros do PostgreSQL, gerando o texto descritivo e o vetor de cada um
+                for mov in movimentos:
+                    if hasattr(mov, 'pessoa') and mov.pessoa:
+                        nome_fornecedor = getattr(mov.pessoa, 'nome_razao_social', getattr(mov.pessoa, 'nome', 'Não Identificado'))
+                    else:
+                        nome_fornecedor = "Não identificado"
+
+                    num_nota = getattr(mov, 'numero_nota', 'S/N')
+                    val_total = getattr(mov, 'valor_total', '0.00')
+                    tipo_mov = getattr(mov, 'tipo', 'A PAGAR')
+                    dt_emissao = getattr(mov, 'data_emissao', 'Não informada')
+
+                    texto_nota = (
+                        f"Nota Fiscal Número: {num_nota}. Fornecedor Emitente: {nome_fornecedor}. "
+                        f"Valor Total da Operação: R$ {val_total}. Classificação do tipo de movimento: {tipo_mov}. "
+                        f"Data de Emissão do Documento: {dt_emissao}."
+                    )
+
+                    # Gera o embedding para o texto desta nota específica
+                    nota_embedding_response = client.models.embed_content(
+                        model='gemini-embedding-001',  # ◄ ALTERE AQUI TAMBÉM
+                        contents=texto_nota
+                    )
+                    vector_nota = np.array(nota_embedding_response.embeddings[0].values)
+
+                    # 3. Calcular a Similaridade de Cosseno (Proximidade vetorial)
+                    dot_product = np.dot(vector_pergunta, vector_nota)
+                    norm_pergunta = np.linalg.norm(vector_pergunta)
+                    norm_nota = np.linalg.norm(vector_nota)
+
+                    similarity = dot_product / (norm_pergunta * norm_nota) if (norm_pergunta * norm_nota) > 0 else 0
+
+                    trechos_e_scores.append((similarity, texto_nota))
+
+                # 4. Ordenar do maior score para o menor e isolar os 3 melhores contextos
+                trechos_e_scores.sort(key=lambda x: x[0], reverse=True)
+                melhores_contextos = [trecho for score, trecho in trechos_e_scores[:3]]
+
+                contexto_banco = "CONTEXTO SEMÂNTICO SELECIONADO POR PROXIMIDADE VETORIAL:\n" + "\n".join(melhores_contextos)
+
+            except Exception as e:
+                return Response({"error": f"Erro no pipeline de Embeddings: {str(e)}"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        else:
+            return Response({"error": "Método de consulta inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # =========================================================================
+        # PROMPT DE GERAÇÃO FINAL (Processa a resposta para AMBOS os métodos)
+        # =========================================================================
+        prompt_sistema = (
+            "Você é um analista financeiro sênior e auditor de contas corporativas. "
+            "Baseando-se estritamente no contexto dos dados reais do banco fornecidos abaixo, "
+            "responda à pergunta do usuário de forma altamente profissional, encorpada e formal. "
+            "Formate valores em Reais (R$) e datas adequadamente. Se os dados fornecidos não contiverem "
+            "a resposta para a pergunta, informe formalmente que o registro específico não foi localizado na base atual.\n\n"
+            f"CONTEXTO DOS DADOS DO BANCO:\n{contexto_banco}\n\n"
+            f"PERGUNTA DO USUÁRIO: {pergunta}"
+        )
+
         try:
-            # 1. Extração dos dados
-            cnpj_forn = dados['Fornecedor']['CNPJ']
-            nome_forn = dados['Fornecedor']['Razão Social']
-
-            doc_fat = dados['Faturado'].get('CPF') or dados['Faturado'].get('CNPJ')
-            nome_fat = dados['Faturado']['Nome Completo']
-
-            categoria_nome = dados['Classificação da DESPESA'][0]['categoria']
-
-            # Tratamento de valor total
-            valor_final = float(dados['ValorTotal'].replace('.', '').replace(',', '.'))
-
-            # 2. Criando ou recuperando entidades (Regras 1, 2 e 3 do PDF)
-            fornecedor, _ = Pessoa.objects.get_or_create(
-                cnpj_cpf=cnpj_forn,
-                defaults={'nome_razao_social': nome_forn, 'tipo': 'FORNECEDOR'}
+            # Chamada oficial para o modelo do Gemini consolidada para os dois métodos
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt_sistema,
             )
-            faturado, _ = Pessoa.objects.get_or_create(
-                cnpj_cpf=doc_fat,
-                defaults={'nome_razao_social': nome_fat, 'tipo': 'FATURADO'}
-            )
-            despesa, _ = Classificacao.objects.get_or_create(
-                descricao=categoria_nome,
-                defaults={'tipo': 'DESPESA'}
-            )
-
-            # 1. Verifique se a nota já existe antes de criar qualquer coisa
-            nota_numero = dados['Número da Nota Fiscal']
-            ja_existe = MovimentoContas.objects.filter(
-                pessoa=fornecedor,
-                numero_nota=nota_numero
-            ).exists()
-
-            if ja_existe:
-                return Response(
-                    {"message": "Dados já cadastrados: Esta nota fiscal já foi lançada para este fornecedor."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # 3. Criando o Movimento (Regra 4 do PDF)
-            movimento = MovimentoContas.objects.create(
-                tipo='A PAGAR',
-                numero_nota=dados['Número da Nota Fiscal'],
-                data_emissao=self.formatar_data(dados['Data de Emissão']),
-                valor_total=valor_final,
-                pessoa=fornecedor
-            )
-            movimento.classificacoes.add(despesa)
-
-            # 4. Criando TODAS as Parcelas (Regra: Uma ou mais parcelas)
-            for parc in dados['Parcelas']:
-                ParcelaContas.objects.create(
-                    movimento=movimento,
-                    identificacao_unica=str(uuid4()),  # Requisito: Identificacao (UNICA)
-                    numero_parcela=int(parc['numero']),
-                    valor_parcela=float(parc['valor'].replace('.', '').replace(',', '.')),
-                    data_vencimento=self.formatar_data(parc['vencimento']),
-                    situacao='PENDENTE'
-                )
-
-            # 5. Informar ao usuário (Regra 5 do PDF)
-            return Response({"message": "Registro lançado com sucesso!"}, status=status.HTTP_201_CREATED)
-
+            return Response({"resposta": response.text}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({"message": f"Erro ao processar: {str(e)}"}, status=400)
-
-    def formatar_data(self, data_str):
-        # Padroniza hifens para barras e inverte para o padrão do banco (YYYY-MM-DD)
-        data_padronizada = data_str.replace('-', '/')
-        partes = data_padronizada.split('/')
-        return f"{partes[2]}-{partes[1]}-{partes[0]}"
+            return Response({"error": f"Erro na API do Gemini durante a geração: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

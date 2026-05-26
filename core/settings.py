@@ -84,7 +84,7 @@ DATABASES = {
        'NAME': 'cashflow_db',      # Nome do banco que o Docker vai criar
        'USER': 'yago_user',        # Seu usuário
        'PASSWORD': 'password123',  # Sua senha
-       'HOST': 'db',               # IMPORTANTE: nome do serviço no Docker
+       'HOST': 'analise_json_nfe_db',  # ◄ O segredo está aqui! Aponta para o container da N2
        'PORT': '5432',             # Porta padrão do Postgres
    }
 }

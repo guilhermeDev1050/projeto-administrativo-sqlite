@@ -3,5 +3,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('financeiro.urls')), # Agora as rotas começam com /api/
+    path('', include('financeiro.urls')),  # ◄ Essa linha aponta para o seu arquivo de rotas do app
 ]

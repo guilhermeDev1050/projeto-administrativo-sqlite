@@ -1,26 +1,22 @@
-version: '3.8'
+name: busca-rag
 
 services:
-  db:
-    image: postgres:15
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - "POSTGRES_DB=cashflow_db"
-      - "POSTGRES_USER=yago_user"
-      - "POSTGRES_PASSWORD=password123"
-
   web:
     build: .
+    container_name: busca_rag_web
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8001:8000"
+    env_file:
+      - .env
     environment:
-      - "DATABASE_URL=postgres://yago_user:password123@db:5432/cashflow_db"
-    depends_on:
-      - db
+      # Conecta na URL do banco oficial que roda lá no container da N2
+      - "DATABASE_URL=postgres://yago_user:password123@analise_json_nfe_db:5432/cashflow_db"
+    networks:
+      - analise-json-nfe_default
 
-volumes:
-  postgres_data:
+networks:
+  analise-json-nfe_default:
+    external: true
