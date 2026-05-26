@@ -24,9 +24,9 @@ class ConsultaRAGView(APIView):
             return Response({"error": f"Falha ao inicializar o cliente Gemini: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Buscamos os dados do banco UMA VEZ para que ambos os métodos possam utilizar
+        # Buscamos os dados do banco pré-carregando a relação de Pessoa para performance
         try:
-            movimentos = list(MovimentoContas.objects.all().order_by('-id')[:20])
+            movimentos = list(MovimentoContas.objects.all().select_related('pessoa').order_by('-id')[:20])
         except Exception as e:
             return Response({
                 "error": f"Erro ao consultar a tabela MovimentoContas. Verifique se as colunas existem. Detalhe: {str(e)}"
@@ -41,59 +41,100 @@ class ConsultaRAGView(APIView):
         # ABORDAGEM 1: RAG SIMPLES (Busca de Metadados Textuais via SQL)
         # =========================================================================
         if metodo == 'simples':
-            contexto_banco = "DADOS ATUAIS DO SISTEMA FINANCEIRO:\n"
+            contexto_banco = "DADOS ATUAIS COMPLETOS DO SISTEMA FINANCEIRO E CADASTROS:\n"
             for mov in movimentos[:10]:
-                if hasattr(mov, 'pessoa') and mov.pessoa:
-                    nome_fornecedor = getattr(mov.pessoa, 'nome_razao_social', getattr(mov.pessoa, 'nome', 'Fornecedor Anônimo'))
-                else:
-                    nome_fornecedor = "Não identificado"
+                # 1. Dados Cadastrais da Pessoa (Fornecedor/Faturado)
+                p = mov.pessoa
+                nome_fornecedor = getattr(p, 'nome_razao_social', 'Não Identificado')
+                fantasia_fornecedor = getattr(p, 'fantasia', 'Não informado')
+                cnpj_cpf = getattr(p, 'cnpj_cpf', 'Não informado')
+                tipo_pessoa = getattr(p, 'tipo', 'Não informado')
 
+                # 2. Dados Cruzados da Classificação (Relacionamento ManyToManyField)
+                classificacoes_lista = []
+                for c in mov.classificacoes.all():
+                    desc = getattr(c, 'descricao', '')
+                    cat = getattr(c, 'categoria', '')
+                    tipo_c = getattr(c, 'tipo', '')
+                    classificacoes_lista.append(f"[{desc} ({cat}) - {tipo_c}]")
+                texto_classificacoes = " , ".join(classificacoes_lista) if classificacoes_lista else "Sem classificação registrada"
+
+                # 3. Dados Básicos do Movimento
                 num_nota = getattr(mov, 'numero_nota', 'S/N')
                 val_total = getattr(mov, 'valor_total', '0.00')
                 tipo_mov = getattr(mov, 'tipo', 'A PAGAR')
+                dt_emissao = getattr(mov, 'data_emissao', 'Não informada')
 
-                contexto_banco += f"- Nota: {num_nota} | Fornecedor: {nome_fornecedor} | Valor Total: R$ {val_total} | Tipo: {tipo_mov}\n"
+                # 4. Dados Relacionados de Parcelas
+                parcelas_info = []
+                parcelas = ParcelaContas.objects.filter(movimento=mov)
+                for p_obj in parcelas:
+                    p_num = getattr(p_obj, 'numero_parcela', '1')
+                    p_val = getattr(p_obj, 'valor_parcela', '0.00')
+                    p_venc = getattr(p_obj, 'data_vencimento', 'Não informada')
+                    parcelas_info.append(f"[Parc {p_num}: R$ {p_val} Venc: {p_venc}]")
+                texto_parcelas = " | ".join(parcelas_info) if parcelas_info else "Nenhuma parcela registrada"
+
+                # Injeta a linha de metadados completa no contexto
+                contexto_banco += (
+                    f"- Nota: {num_nota} | Fornecedor: {nome_fornecedor} (Fantasia: {fantasia_fornecedor}) | "
+                    f"CNPJ/CPF: {cnpj_cpf} | Tipo Pessoa: {tipo_pessoa} | "
+                    f"Classificações: {texto_classificacoes} | Valor Total: R$ {val_total} | "
+                    f"Tipo Movimento: {tipo_mov} | Data Emissão: {dt_emissao} | Parcelas: {texto_parcelas}\n"
+                )
 
         # =========================================================================
         # ABORDAGEM 2: RAG EMBEDDINGS (Busca Semântica Avançada) 🚀
         # =========================================================================
         elif metodo == 'embeddings':
             try:
-                # 1. Gerar o vetor matemático para a PERGUNTA do usuário
                 query_embedding_response = client.models.embed_content(
-                    model='gemini-embedding-001',  # ◄ ALTERE AQUI
+                    model='gemini-embedding-001',
                     contents=pergunta
                 )
                 vector_pergunta = np.array(query_embedding_response.embeddings[0].values)
 
                 trechos_e_scores = []
 
-                # 2. Varrer os registros do PostgreSQL, gerando o texto descritivo e o vetor de cada um
                 for mov in movimentos:
-                    if hasattr(mov, 'pessoa') and mov.pessoa:
-                        nome_fornecedor = getattr(mov.pessoa, 'nome_razao_social', getattr(mov.pessoa, 'nome', 'Não Identificado'))
-                    else:
-                        nome_fornecedor = "Não identificado"
+                    # Coleta mapeada conforme o models.py
+                    p = mov.pessoa
+                    nome_fornecedor = getattr(p, 'nome_razao_social', 'Não Identificado')
+                    fantasia_fornecedor = getattr(p, 'fantasia', 'Não informado')
+                    cnpj_cpf = getattr(p, 'cnpj_cpf', 'Não informado')
+                    tipo_pessoa = getattr(p, 'tipo', 'Não informado')
+
+                    classificacoes_lista = []
+                    for c in mov.classificacoes.all():
+                        classificacoes_lista.append(f"categoria {getattr(c, 'categoria', '')} descrita como {getattr(c, 'descricao', '')} classificada tipo {getattr(c, 'tipo', '')}")
+                    texto_classificacoes = " e ".join(classificacoes_lista) if classificacoes_lista else "sem classificações de categorias"
 
                     num_nota = getattr(mov, 'numero_nota', 'S/N')
                     val_total = getattr(mov, 'valor_total', '0.00')
                     tipo_mov = getattr(mov, 'tipo', 'A PAGAR')
                     dt_emissao = getattr(mov, 'data_emissao', 'Não informada')
 
+                    parcelas_info = []
+                    parcelas = ParcelaContas.objects.filter(movimento=mov)
+                    for p_obj in parcelas:
+                        parcelas_info.append(f"parcela número {getattr(p_obj, 'numero_parcela', '1')} com valor de R$ {getattr(p_obj, 'valor_parcela', '0.00')} vencendo em {getattr(p_obj, 'data_vencimento', 'Não informada')}")
+                    texto_parcelas = ", ".join(parcelas_info) if parcelas_info else "sem parcelas detalhadas"
+
+                    # Texto descritivo unificado com todas as relações reais do banco
                     texto_nota = (
-                        f"Nota Fiscal Número: {num_nota}. Fornecedor Emitente: {nome_fornecedor}. "
-                        f"Valor Total da Operação: R$ {val_total}. Classificação do tipo de movimento: {tipo_mov}. "
-                        f"Data de Emissão do Documento: {dt_emissao}."
+                        f"Nota Fiscal Número: {num_nota}. Fornecedor Emitente: {nome_fornecedor}, também conhecido pelo nome fantasia {fantasia_fornecedor}, "
+                        f"inscrito no documento fiscal CNPJ ou CPF número {cnpj_cpf}, enquadrado como tipo de pessoa {tipo_pessoa}. "
+                        f"Valor Total do movimento: R$ {val_total}. Classificações financeiras atreladas: {texto_classificacoes}. "
+                        f"Natureza da operação: {tipo_mov}. Emitido na data de: {dt_emissao}. "
+                        f"Cronograma de parcelamento registrado: {texto_parcelas}."
                     )
 
-                    # Gera o embedding para o texto desta nota específica
                     nota_embedding_response = client.models.embed_content(
-                        model='gemini-embedding-001',  # ◄ ALTERE AQUI TAMBÉM
+                        model='gemini-embedding-001',
                         contents=texto_nota
                     )
                     vector_nota = np.array(nota_embedding_response.embeddings[0].values)
 
-                    # 3. Calcular a Similaridade de Cosseno (Proximidade vetorial)
                     dot_product = np.dot(vector_pergunta, vector_nota)
                     norm_pergunta = np.linalg.norm(vector_pergunta)
                     norm_nota = np.linalg.norm(vector_nota)
@@ -102,7 +143,6 @@ class ConsultaRAGView(APIView):
 
                     trechos_e_scores.append((similarity, texto_nota))
 
-                # 4. Ordenar do maior score para o menor e isolar os 3 melhores contextos
                 trechos_e_scores.sort(key=lambda x: x[0], reverse=True)
                 melhores_contextos = [trecho for score, trecho in trechos_e_scores[:3]]
 
@@ -120,7 +160,7 @@ class ConsultaRAGView(APIView):
         # =========================================================================
         prompt_sistema = (
             "Você é um analista financeiro sênior e auditor de contas corporativas. "
-            "Baseando-se estritamente no contexto dos dados reais do banco fornecidos abaixo, "
+            "Baseando-se estritamente no contexto dos dados reais do banco fornecidos abaixo (que abrangem notas, dados cadastrais de pessoas, CNPJ/CPF, classificações e parcelas), "
             "responda à pergunta do usuário de forma altamente profissional, encorpada e formal. "
             "Formate valores em Reais (R$) e datas adequadamente. Se os dados fornecidos não contiverem "
             "a resposta para a pergunta, informe formalmente que o registro específico não foi localizado na base atual.\n\n"
@@ -129,7 +169,6 @@ class ConsultaRAGView(APIView):
         )
 
         try:
-            # Chamada oficial para o modelo do Gemini consolidada para os dois métodos
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt_sistema,
