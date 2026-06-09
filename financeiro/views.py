@@ -303,7 +303,6 @@ def gerar_parcelas_api(request):
             return JsonResponse({'sucesso': False, 'mensagem': str(e)}, status=500)
 
     return JsonResponse({'sucesso': False, 'mensagem': 'Método não permitido.'}, status=405)
-<<<<<<< HEAD
 
 
 def obter_parcelas_api(request, movimento_id):
