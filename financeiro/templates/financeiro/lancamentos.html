@@ -54,18 +54,20 @@
             <thead class="table-success">
                 <tr class="text-center align-middle">
                     <th style="width: 5%; user-select: none;"> </th>
-                    <th style="width: 10%; cursor: pointer; user-select: none;" onclick="ordenarTabela(1, 'num')">Código <span class="sort-icon"></span></th>
-                    <th style="width: 30%; cursor: pointer; user-select: none;" onclick="ordenarTabela(2, 'text')">Descrição <span class="sort-icon"></span></th> 
-                    <th style="width: 20%; cursor: pointer; user-select: none;" onclick="ordenarTabela(3, 'text')">Parceiro <span class="sort-icon"></span></th>
-                    <th style="width: 10%; cursor: pointer; user-select: none;" onclick="ordenarTabela(4, 'text')">Tipo <span class="sort-icon"></span></th>
-                    <th style="width: 10%; cursor: pointer; user-select: none;" onclick="ordenarTabela(5, 'date')">Data Emissão <span class="sort-icon"></span></th>
-                    <th style="width: 20%; cursor: pointer; user-select: none;" onclick="ordenarTabela(6, 'num')">Valor Total <span class="sort-icon"></span></th> 
+                    <th style="width: 7%; cursor: pointer; user-select: none;" onclick="ordenarTabela(1, 'num')">Código <span class="sort-icon"></span></th>
+                    <th style="width: 22%; cursor: pointer; user-select: none;" onclick="ordenarTabela(2, 'text')">Descrição <span class="sort-icon"></span></th> 
+                    <th style="width: 13%; cursor: pointer; user-select: none;" onclick="ordenarTabela(3, 'text')">Categoria <span class="sort-icon"></span></th> 
+                    <th style="width: 13%; cursor: pointer; user-select: none;" onclick="ordenarTabela(4, 'text')">N° da Nota Fiscal <span class="sort-icon"></span></th> 
+                    <th style="width: 15%; cursor: pointer; user-select: none;" onclick="ordenarTabela(5, 'text')">Parceiro <span class="sort-icon"></span></th>
+                    <th style="width: 8%; cursor: pointer; user-select: none;" onclick="ordenarTabela(6, 'text')">Tipo <span class="sort-icon"></span></th>
+                    <th style="width: 8%; cursor: pointer; user-select: none;" onclick="ordenarTabela(7, 'date')">Data Emissão <span class="sort-icon"></span></th>
+                    <th style="width: 9%; cursor: pointer; user-select: none;" onclick="ordenarTabela(8, 'num')">Valor Total <span class="sort-icon"></span></th> 
                 </tr>
             </thead>
             <tbody>
                 {% if error_msg %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">{{ error_msg }}</td>
+                    <td colspan="9" class="text-center text-muted py-4">{{ error_msg }}</td>
                 </tr>
                 {% elif movimentos %}
                 {% for mov in movimentos %}
@@ -78,6 +80,8 @@
                     </td>
                     <td class="text-center" data-order="{{ mov.id }}">{{ mov.id|stringformat:"03d" }}</td>
                     <td title="{{ mov.descricao_produtos }}">{{ mov.descricao_produtos|truncatechars:150 }}</td>
+                    <td>{{ mov.classificacoes.first.descricao|default_if_none:"-" }}</td>
+                    <td class="text-center" data-order="{{ mov.numero_nota }}">{{ mov.numero_nota }}</td>
                     <td>{{ mov.pessoa.nome_razao_social }}</td>
                     <td class="text-center" data-order="{{ mov.tipo }}">
                         {% if mov.tipo == 'A RECEBER' %}
@@ -92,7 +96,7 @@
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-5">
+                    <td colspan="9" class="text-center text-muted py-5">
                         <div class="d-flex flex-column align-items-center">Utilize os filtros acima ou clique em "Todos" para carregar os lançamentos ativos do sistema.</div>
                     </td>
                 </tr>
@@ -164,9 +168,9 @@
             </div>
             <!-- Rodapé do Modal -->
             <div class="modal-footer border-0 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" onclick="confirmarParcelamento()">Salvar</button>
-                <button type="button" class="btn btn-outline-secondary fw-bold px-4" onclick="limparGrade()">Limpar</button>
                 <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" onclick="limparGrade()">Limpar</button>
+                <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" onclick="confirmarParcelamento()">Salvar</button>
             </div>
         </div>
     </div>

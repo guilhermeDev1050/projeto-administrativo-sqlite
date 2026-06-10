@@ -222,7 +222,7 @@ def listar_lancamentos(request, *args, **kwargs):
     # Item 3.b: Carrega dados através da Busca ou botão TODOS
     if todos == 'true' or descricao or tipo or person_id:
         # Item 3.c: Filtra apenas movimentos ativos e de parceiros ativos (Exclusão lógica)
-        movimentos = MovimentoContas.objects.filter(status_ativo=True, pessoa__status_ativo=True).select_related('pessoa').order_by('-data_emissao')
+        movimentos = MovimentoContas.objects.filter(status_ativo=True, pessoa__status_ativo=True).select_related('pessoa').prefetch_related('classificacoes').order_by('-data_emissao')
 
         # Item 3.e: Filtros multi-elemento cumulativos
         if descricao:

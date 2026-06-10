@@ -46,6 +46,10 @@ class Command(BaseCommand):
                 descricao=cat["descricao"],
                 defaults={"categoria": "PRODUÇÃO RURAL", "tipo": cat["tipo"], "status_ativo": True}
             )
+            # Garante que a categoria volte ao padrão PRODUÇÃO RURAL se foi alterada no banco
+            if obj.categoria != "PRODUÇÃO RURAL":
+                obj.categoria = "PRODUÇÃO RURAL"
+                obj.save()
             obj_classificacoes.append({"obj": obj, "produtos": cat["produtos"].split(", "), "tipo": cat["tipo"]})
 
         # =========================================================================
