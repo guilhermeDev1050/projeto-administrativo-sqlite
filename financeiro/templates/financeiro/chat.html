@@ -133,10 +133,10 @@
                 if (!response.ok) {
                     const erroDados = await response.json().catch(() => null);
                     if (erroDados) {
-                        boxResposta.textContent = `❌ Erro do Servidor: ${erroDados.error || erroDados.message}`;
+                        boxResposta.textContent = `Erro do Servidor: ${erroDados.error || erroDados.message}`;
                         return;
                     }
-                    boxResposta.textContent = `❌ Erro HTTP: Status ${response.status}`;
+                    boxResposta.textContent = `Erro HTTP: Status ${response.status}`;
                     return;
                 }
 
@@ -144,7 +144,7 @@
                 boxResposta.textContent = dados.resposta;
 
             } catch (error) {
-                boxResposta.textContent = `❌ Erro de Processamento: O servidor Django recusou a conexão ou retornou um formato inválido. Detalhe: ${error.message}`;
+                boxResposta.textContent = `Erro de Processamento: O servidor Django recusou a conexão ou retornou um formato inválido. Detalhe: ${error.message}`;
             } finally {
                 loading.classList.add('hidden');
                 boxResposta.classList.remove('hidden');

@@ -32,8 +32,7 @@
         </div>
         <div class="col-md-3 d-flex align-items-end gap-2">
             <button type="submit" class="btn btn-verde w-50 fw-bold">Consultar</button>
-            <a href="{% url 'listar_lancamentos' %}?todos=true"
-                class="btn btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center">TODOS</a>
+            <a href="{% url 'listar_lancamentos' %}?todos=true" class="btn btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center">Todos</a>
         </div>
     </form>
 </div>
@@ -41,14 +40,12 @@
 <div class="card-custom">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div class="d-flex gap-2">
-            <button onclick="executarAcao('incluir')" class="btn btn-sm btn-outline-success px-3 fw-bold">＋ Incluir</button>
-            <button onclick="executarAcao('alterar')" class="btn btn-sm btn-outline-primary px-3 fw-bold">✏️ Alterar</button>
-            <button onclick="executarAcao('excluir')" class="btn btn-sm btn-outline-danger px-3 fw-bold">🗑️ Excluir</button>
-
+            <button onclick="executarAcao('incluir')" class="btn btn-sm btn-outline-success px-3 fw-bold">Incluir</button>
+            <button onclick="executarAcao('alterar')" class="btn btn-sm btn-outline-warning px-3 fw-bold">Alterar</button>
+            <button onclick="executarAcao('excluir')" class="btn btn-sm btn-outline-danger px-3 fw-bold">Excluir</button>
         </div>
         <div>
-            <button onclick="executarAcao('parcelas')" class="btn btn-sm btn-outline-warning px-4 fw-bold shadow-sm">⚙️
-                Gerar Parcelas</button>
+            <button onclick="executarAcao('parcelas')" class="btn btn-sm btn-outline-primary px-4 fw-bold shadow-sm">Gerar Parcelas</button>
         </div>
     </div>
 
@@ -56,7 +53,7 @@
         <table class="table table-bordered table-hover align-middle mb-0" style="min-width: 900px;">
             <thead class="table-success">
                 <tr class="text-center align-middle">
-                    <th style="width: 5%; user-select: none;">#</th>
+                    <th style="width: 5%; user-select: none;"> </th>
                     <th style="width: 10%; cursor: pointer; user-select: none;" onclick="ordenarTabela(1, 'num')">Código <span class="sort-icon"></span></th>
                     <th style="width: 30%; cursor: pointer; user-select: none;" onclick="ordenarTabela(2, 'text')">Descrição <span class="sort-icon"></span></th> 
                     <th style="width: 20%; cursor: pointer; user-select: none;" onclick="ordenarTabela(3, 'text')">Parceiro <span class="sort-icon"></span></th>
@@ -96,11 +93,7 @@
                 {% else %}
                 <tr>
                     <td colspan="7" class="text-center text-muted py-5">
-                        <div class="d-flex flex-column align-items-center">
-                            🔍
-                            Utilize os filtros acima ou clique em "TODOS" para carregar os lançamentos ativos do
-                            sistema.
-                        </div>
+                        <div class="d-flex flex-column align-items-center">Utilize os filtros acima ou clique em "Todos" para carregar os lançamentos ativos do sistema.</div>
                     </td>
                 </tr>
                 {% endif %}
@@ -112,35 +105,23 @@
 <div class="modal fade" id="modalParcelas" tabindex="-1" aria-labelledby="modalParcelasLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="modalParcelasLabel">⚙️ Gerar Parcelas</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalParcelasLabel">Gerar Parcelas</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div id="js-modal-messages-container" class="mb-3"></div>
-                <!-- Título da seção interna -->
-                <h5 class="text-success border-bottom border-success pb-2 mb-3 fw-bold"
-                    style="border-bottom-style: dashed !important; border-bottom-width: 2px !important;">Detalhamento de
-                    Parcelas</h5>
-
-                <!-- Caixas Informativas superiores do Mockup -->
+                <h5 class="text-primary border-bottom border-primary pb-2 mb-3 fw-bold" style="border-bottom-style: dashed !important; border-bottom-width: 2px !important;">Detalhamento de Parcelas</h5>
                 <div class="row g-2 mb-3">
                     <div class="col-md-8">
-                        <div class="p-2 rounded"
-                            style="border: 2px dashed var(--verde-principal) !important; background-color: var(--verde-claro) !important; min-height: 70px;">
-                            <small class="fw-bold d-block"
-                                style="color: var(--verde-principal) !important; font-size: 0.75rem;">Descrição do
-                                Registro:</small>
+                        <div class="p-2 rounded" style="border: 2px dashed #0d6efd !important; background-color: #e7f1ff !important; min-height: 70px;">
+                            <small class="fw-bold d-block" style="color: #0d6efd !important; font-size: 0.75rem;">Descrição do Registro:</small>
                             <span id="modal_registro_desc" class="text-dark small fw-semibold"></span>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="p-2 rounded text-end"
-                            style="border: 2px dashed var(--verde-principal) !important; background-color: var(--verde-claro) !important; min-height: 70px;">
-                            <small class="fw-bold d-block text-start"
-                                style="color: var(--verde-principal) !important; font-size: 0.75rem;">Valor
-                                Total:</small>
+                        <div class="p-2 rounded text-end" style="border: 2px dashed #0d6efd !important; background-color: #e7f1ff !important; min-height: 70px;">
+                            <small class="fw-bold d-block text-start" style="color: #0d6efd !important; font-size: 0.75rem;">Valor Total:</small>
                             <span id="modal_registro_valor" class="fw-bold text-dark fs-5"></span>
                         </div>
                     </div>
@@ -149,30 +130,25 @@
                 <!-- Formulário com Inputs alinhados -->
                 <form id="formGerarParcelas">
                     <input type="hidden" id="lancamento_id_parcela" name="lancamento_id">
-
                     <div class="row g-2 align-items-end mb-4">
                         <div class="col-md-4">
-                            <label for="qtd_parcelas" class="form-label fw-bold small text-muted">Qtd. de
-                                Parcelas</label>
-                            <input type="number" class="form-control" id="qtd_parcelas" name="qtd_parcelas" min="1"
-                                max="120" required placeholder="Ex: 3">
+                            <label for="qtd_parcelas" class="form-label fw-bold small text-muted">Qtd. de Parcelas</label>
+                            <input type="number" class="form-control" id="qtd_parcelas" name="qtd_parcelas" min="1" max="120" required placeholder="Ex: 3">
                         </div>
                         <div class="col-md-4">
-                            <label for="primeiro_vencimento" class="form-label fw-bold small text-muted">1º
-                                Vencimento</label>
+                            <label for="primeiro_vencimento" class="form-label fw-bold small text-muted">1º Vencimento</label>
                             <input type="date" class="form-control" id="primeiro_vencimento" required>
                         </div>
                         <div class="col-md-4">
-                            <button type="button" class="btn btn-verde fw-bold w-100 shadow-sm"
-                                onclick="gerarGrade()">Gerar Grade</button>
+                            <button type="button" class="btn btn-primary fw-bold w-100 shadow-sm" onclick="gerarGrade()">Gerar Grade</button>
                         </div>
                     </div>
 
-                    <!-- Grade (Grid) de Visualização de Parcelas -->
+                    <!-- Grade de Visualização de Parcelas -->
                     <div id="grid_parcelas_section" class="d-none">
                         <div class="table-responsive rounded border mb-3" style="max-height: 250px; overflow-y: auto;">
                             <table class="table table-bordered table-sm align-middle text-center small mb-0">
-                                <thead class="table-success text-white sticky-top">
+                                <thead class="table-primary sticky-top">
                                     <tr>
                                         <th style="width: 15%;">Nº Parcela</th>
                                         <th style="width: 30%;">Valor</th>
@@ -180,9 +156,7 @@
                                         <th style="width: 20%;">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody id="grid_parcelas_body">
-                                    <!-- Gerado via JS -->
-                                </tbody>
+                                <tbody id="grid_parcelas_body"> </tbody>
                             </table>
                         </div>
                     </div>
@@ -190,12 +164,9 @@
             </div>
             <!-- Rodapé do Modal -->
             <div class="modal-footer border-0 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-outline-success fw-bold px-4 shadow-sm"
-                    onclick="confirmarParcelamento()">Salvar</button>
-                <button type="button" class="btn btn-outline-secondary fw-bold px-4"
-                    onclick="limparGrade()">Limpar</button>
-                <button type="button" class="btn btn-outline-danger fw-bold px-4"
-                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" onclick="confirmarParcelamento()">Salvar</button>
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" onclick="limparGrade()">Limpar</button>
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
             </div>
         </div>
     </div>
@@ -311,7 +282,7 @@
         const selecionado = document.querySelector('input[name="linha_selecionada"]:checked');
 
         if (!selecionado) {
-            exibirMensagemFeedback('⚠️ Por favor, selecione um lançamento na tabela usando o botão circular da lateral esquerda.', 'warning');
+            exibirMensagemFeedback('Por favor, selecione um lançamento na tabela usando o botão circular da lateral esquerda.', 'warning');
             return;
         }
 
@@ -343,9 +314,9 @@
             // Define o título do modal dinamicamente de acordo com a ação realizada
             const modalLabel = document.getElementById('modalParcelasLabel');
             if (acao === 'alterar') {
-                modalLabel.innerHTML = '✏️ Alterar Parcelas';
+                modalLabel.innerHTML = 'Alterar Parcelas';
             } else {
-                modalLabel.innerHTML = '⚙️ Gerar Parcelas';
+                modalLabel.innerHTML = 'Gerar Parcelas';
             }
             
             // Abre o modal de imediato mostrando indicador de carregamento
@@ -422,11 +393,11 @@
         const gridBody = document.getElementById('grid_parcelas_body');
 
         if (!qtd || qtd <= 0) {
-            exibirMensagemFeedback("⚠️ Por favor, informe uma quantidade válida de parcelas.", "warning", true);
+            exibirMensagemFeedback("Por favor, informe uma quantidade válida de parcelas.", "warning", true);
             return;
         }
         if (!dataVencStr) {
-            exibirMensagemFeedback("⚠️ Por favor, informe a data do 1º Vencimento.", "warning", true);
+            exibirMensagemFeedback("Por favor, informe a data do 1º Vencimento.", "warning", true);
             return;
         }
 
@@ -441,7 +412,7 @@
 
                 if (dataPrimeiro < dataEmissao) {
                     const dataEmissaoFormatada = dataEmissao.toLocaleDateString('pt-BR');
-                    exibirMensagemFeedback(`⚠️ A data do 1º Vencimento não pode ser menor que a data de emissão do lançamento (${dataEmissaoFormatada}).`, "warning", true);
+                    exibirMensagemFeedback(`A data do 1º Vencimento não pode ser menor que a data de emissão do lançamento (${dataEmissaoFormatada}).`, "warning", true);
                     return;
                 }
             }
@@ -514,7 +485,7 @@
 
         const rows = document.querySelectorAll('.parcela-row');
         if (rows.length === 0) {
-            exibirMensagemFeedback("⚠️ Por favor, informe a quantidade de parcelas e clique em 'Gerar Grade' antes de salvar.", "warning", true);
+            exibirMensagemFeedback("Por favor, informe a quantidade de parcelas e clique em 'Gerar Grade' antes de salvar.", "warning", true);
             return;
         }
 
@@ -529,11 +500,11 @@
             const status = row.querySelector('.row-status').value;
 
             if (isNaN(val) || val <= 0) {
-                exibirMensagemFeedback(`⚠️ Parcela ${num}: Por favor, informe um valor maior que zero.`, "warning", true);
+                exibirMensagemFeedback(`Parcela ${num}: Por favor, informe um valor maior que zero.`, "warning", true);
                 return;
             }
             if (!venc) {
-                exibirMensagemFeedback(`⚠️ Parcela ${num}: Por favor, informe uma data de vencimento válida.`, "warning", true);
+                exibirMensagemFeedback(`Parcela ${num}: Por favor, informe uma data de vencimento válida.`, "warning", true);
                 return;
             }
 
@@ -549,7 +520,7 @@
                     if (dataVenc < dataEmissao) {
                         const dataFormatada = dataVenc.toLocaleDateString('pt-BR');
                         const dataEmissaoFormatada = dataEmissao.toLocaleDateString('pt-BR');
-                        exibirMensagemFeedback(`⚠️ Parcela ${num}: A data de vencimento (${dataFormatada}) não pode ser menor que a data de emissão do lançamento (${dataEmissaoFormatada}).`, "warning", true);
+                        exibirMensagemFeedback(`Parcela ${num}: A data de vencimento (${dataFormatada}) não pode ser menor que a data de emissão do lançamento (${dataEmissaoFormatada}).`, "warning", true);
                         return;
                     }
                 }
@@ -570,7 +541,7 @@
         if (somaCents !== totalCents) {
             const valorTotalFormatado = valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const somaFormatada = soma.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            exibirMensagemFeedback(`⚠️ A soma das parcelas deve ser igual ao valor total do registro (${valorTotalFormatado}).<br>Soma atual das parcelas no grid: ${somaFormatada}`, "warning", true);
+            exibirMensagemFeedback(`A soma das parcelas deve ser igual ao valor total do registro (${valorTotalFormatado}).<br>Soma atual das parcelas no grid: ${somaFormatada}`, "warning", true);
             return;
         }
 
@@ -594,11 +565,11 @@
             if (dados.sucesso) {
                 location.reload();
             } else {
-                exibirMensagemFeedback("❌ Erro ao gerar: " + dados.mensagem, "danger", true);
+                exibirMensagemFeedback("Erro ao gerar: " + dados.mensagem, "danger", true);
             }
 
         } catch (erro) {
-            exibirMensagemFeedback("🚨 Erro de comunicação com o servidor.", "danger", true);
+            exibirMensagemFeedback("Erro de comunicação com o servidor.", "danger", true);
         }
     }
 

@@ -2,74 +2,78 @@
 {% load l10n %}
 
 {% block content %}
-<div class="card-custom shadow-sm animate__animated animate__fadeIn">
-    <div class="card-title-custom d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">＋ Incluir Lançamento Financeiro</h3>
-        <a href="{% url 'listar_lancamentos' %}" class="btn btn-sm btn-outline-secondary">Voltar</a>
-    </div>
+<div class="container mt-4">
+    <div class="card shadow-sm border-0 rounded">
+        <div class="card-header bg-success text-white d-flex align-items-center justify-content-between py-3">
+            <h5 class="mb-0 fw-bold">Incluir Registro Financeiro</h5>
+            <a href="{% url 'listar_lancamentos' %}" class="btn btn-sm btn-outline-light">Voltar</a>
+        </div>
+        
+        <div class="card-body p-4">
+            <form method="POST" action="{% url 'incluir_lancamento' %}">
+                {% csrf_token %}
 
-    <form method="POST" action="{% url 'incluir_lancamento' %}" class="mt-3">
-        {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Descrição dos Produtos / Serviços</label>
+                        <textarea name="descricao_produtos" class="form-control" rows="2" placeholder="Ex: Compra de Fertilizantes para a unidade produtora..." required></textarea>
+                    </div>
 
-        <div class="row g-3">
-            <div class="col-12">
-                <label class="form-label fw-bold text-secondary">Descrição dos Produtos / Serviços</label>
-                <textarea name="descricao_produtos" class="form-control" rows="2" placeholder="Ex: Compra de Fertilizantes para a unidade produtora..." required></textarea>
-            </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tipo de Fluxo</label>
+                        <select name="tipo" class="form-select" required>
+                            <option value="" selected disabled>Selecione o tipo...</option>
+                            <option value="A RECEBER">Receita (A Receber)</option>
+                            <option value="A PAGAR">Despesa (A Pagar)</option>
+                        </select>
+                    </div>
 
-            <div class="col-md-6">
-                <label class="form-label fw-bold text-secondary">Tipo de Fluxo</label>
-                <select name="tipo" class="form-select" required>
-                    <option value="" selected disabled>Selecione o tipo...</option>
-                    <option value="A RECEBER">🟢 Receita (A Receber)</option>
-                    <option value="A PAGAR">🔴 Despesa (A Pagar)</option>
-                </select>
-            </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Número da Nota / Documento</label>
+                        <input type="text" name="numero_nota" class="form-control" placeholder="Ex: 000.452.012" required>
+                    </div>
 
-            <div class="col-md-6">
-                <label class="form-label fw-bold text-secondary">Número da Nota / Documento</label>
-                <input type="text" name="numero_nota" class="form-control" placeholder="Ex: 000.452.012" required>
-            </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Parceiro Comercial (Cliente/Fornecedor)</label>
+                        <select name="pessoa" class="form-select" required>
+                            <option value="" selected disabled>Selecione um parceiro ativo...</option>
+                            {% for p in partners|default:parceiros %}
+                            <option value="{{ p.id }}">{{ p.nome_razao_social }} ({{ p.tipo }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-            <div class="col-12">
-                <label class="form-label fw-bold text-secondary">Parceiro Comercial (Cliente/Fornecedor)</label>
-                <select name="pessoa" class="form-select" required>
-                    <option value="" selected disabled>Selecione um parceiro ativo...</option>
-                    {% for p in partners|default:parceiros %}
-                    <option value="{{ p.id }}">{{ p.nome_razao_social }} ({{ p.tipo }})</option>
-                    {% endfor %}
-                </select>
-            </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Classificação de Categoria</label>
+                        <select name="classificacao" class="form-select" required>
+                            <option value="" selected disabled>Selecione uma categoria...</option>
+                            {% for c in classificacoes %}
+                            <option value="{{ c.id }}">{{ c.descricao }} ({{ c.tipo }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-            <div class="col-12">
-                <label class="form-label fw-bold text-secondary">Classificação de Categoria</label>
-                <select name="classificacao" class="form-select" required>
-                    <option value="" selected disabled>Selecione uma categoria...</option>
-                    {% for c in classificacoes %}
-                    <option value="{{ c.id }}">{{ c.descricao }} ({{ c.tipo }})</option>
-                    {% endfor %}
-                </select>
-            </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Data de Emissão</label>
+                        <input type="date" name="data_emissao" class="form-control" required>
+                    </div>
 
-            <div class="col-md-6">
-                <label class="form-label fw-bold text-secondary">Data de Emissão</label>
-                <input type="date" name="data_emissao" class="form-control" required>
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label fw-bold text-secondary">Valor Total (R$)</label>
-                <div class="input-group">
-                    <span class="input-group-text">R$</span>
-                    <input type="text" name="valor_total" id="valor_total" class="form-control text-end" placeholder="0,00" required>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Valor Total (R$)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">R$</span>
+                            <input type="text" name="valor_total" id="valor_total" class="form-control text-end" placeholder="0,00" required>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-            <a href="{% url 'listar_lancamentos' %}" id="btn-cancelar" class="btn btn-outline-danger px-4">Cancelar</a>
-            <button type="submit" class="btn btn-outline-success px-5 fw-bold shadow-sm">Salvar Lançamento</button>
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a href="{% url 'listar_lancamentos' %}" id="btn-cancelar" class="btn btn-light px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-success px-4 fw-semibold text-white">Salvar Registro</button>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 
 <script>
