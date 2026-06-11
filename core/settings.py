@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'financeiro', 
+    'interpreter',
 ]
 
 MIDDLEWARE = [
@@ -136,3 +137,17 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# =========================================================================
+# CONFIGURAÇÃO DE CHAVES DE API DO GEMINI
+# =========================================================================
+# Chave da RAG
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+# Chave do Extrator
+EXTRATOR_KEY_PATH = os.path.join(BASE_DIR, "CHAVE_API_EXTRATOR.txt")
+if os.path.exists(EXTRATOR_KEY_PATH):
+    with open(EXTRATOR_KEY_PATH, "r", encoding="utf-8") as f:
+        GEMINI_EXTRATOR_API_KEY = f.read().strip()
+else:
+    GEMINI_EXTRATOR_API_KEY = os.environ.get("GEMINI_EXTRATOR_API_KEY", GEMINI_API_KEY)

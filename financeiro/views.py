@@ -485,3 +485,118 @@ def excluir_lancamento(request, movimento_id):
         return redirect(url_destino)
         
     return render(request, 'financeiro/excluir_lancamento.html', {'movimento': movimento})
+
+
+# =========================================================================
+# INTEGRAÇÃO DO ANALISADOR DE JSON (ETAPA 2)
+# =========================================================================
+class VerificarDadosNFView(APIView):
+    def post(self, request):
+        dados = request.data
+        try:
+            cnpj_forn = dados['Fornecedor']['CNPJ']
+            doc_fat = dados['Faturado'].get('CPF') or dados['Faturado'].get('CNPJ')
+            categoria_nome = dados['Classificação da DESPESA'][0]['categoria']
+
+            fornecedor = Pessoa.objects.filter(cnpj_cpf=cnpj_forn).first()
+            faturado = Pessoa.objects.filter(cnpj_cpf=doc_fat).first()
+            despesa = Classificacao.objects.filter(descricao=categoria_nome).first()
+
+            return Response({
+                "fornecedor": {
+                    "nome": dados['Fornecedor']['Razão Social'],
+                    "status": f"EXISTE - ID: {fornecedor.id}" if fornecedor else "NÃO EXISTE"
+                },
+                "faturado": {
+                    "nome": dados['Faturado']['Nome Completo'],
+                    "status": f"EXISTE - ID: {faturado.id}" if faturado else "NÃO EXISTE"
+                },
+                "despesa": {
+                    "descricao": categoria_nome,
+                    "status": f"EXISTE - ID: {despesa.id}" if despesa else "NÃO EXISTE"
+                }
+            })
+        except Exception as e:
+            return Response({"error": f"Formato de JSON inválido: {str(e)}"}, status=400)
+
+
+class SalvarDadosNFView(APIView):
+    def post(self, request):
+        dados = request.data
+        try:
+            cnpj_forn = dados['Fornecedor']['CNPJ']
+            nome_forn = dados['Fornecedor']['Razão Social']
+
+            doc_fat = dados['Faturado'].get('CPF') or dados['Faturado'].get('CNPJ')
+            nome_fat = dados['Faturado']['Nome Completo']
+
+            categoria_nome = dados['Classificação da DESPESA'][0]['categoria']
+
+            valor_final = float(dados['ValorTotal'].replace('.', '').replace(',', '.'))
+
+            fornecedor, _ = Pessoa.objects.get_or_create(
+                cnpj_cpf=cnpj_forn,
+                defaults={'nome_razao_social': nome_forn, 'tipo': 'FORNECEDOR', 'status_ativo': True}
+            )
+            faturado, _ = Pessoa.objects.get_or_create(
+                cnpj_cpf=doc_fat,
+                defaults={'nome_razao_social': nome_fat, 'tipo': 'FATURADO', 'status_ativo': True}
+            )
+            despesa, _ = Classificacao.objects.get_or_create(
+                descricao=categoria_nome,
+                defaults={'tipo': 'DESPESA', 'categoria': 'PRODUÇÃO RURAL', 'status_ativo': True}
+            )
+
+            nota_numero = dados['Número da Nota Fiscal']
+            ja_existe = MovimentoContas.objects.filter(
+                pessoa=fornecedor,
+                numero_nota=nota_numero,
+                status_ativo=True
+            ).exists()
+
+            if ja_existe:
+                return Response(
+                    {"message": "Dados já cadastrados: Esta nota fiscal já foi lançada para este fornecedor."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            movimento = MovimentoContas.objects.create(
+                tipo='A PAGAR',
+                numero_nota=dados['Número da Nota Fiscal'],
+                data_emissao=self.formatar_data(dados['Data de Emissão']),
+                valor_total=valor_final,
+                pessoa=fornecedor,
+                status_ativo=True
+            )
+            movimento.classificacoes.add(despesa)
+
+            for parc in dados['Parcelas']:
+                ParcelaContas.objects.create(
+                    movimento=movimento,
+                    identificacao_unica=str(uuid4()),
+                    numero_parcela=int(parc['numero']),
+                    valor_parcela=float(parc['valor'].replace('.', '').replace(',', '.')),
+                    data_vencimento=self.formatar_data(parc['vencimento']),
+                    situacao='ABERTO'
+                )
+
+            return Response({"message": "Registro lançado com sucesso!"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"message": f"Erro ao processar: {str(e)}"}, status=400)
+
+    def formatar_data(self, data_str):
+        data_padronizada = data_str.replace('-', '/')
+        partes = data_padronizada.split('/')
+        return f"{partes[2]}-{partes[1]}-{partes[0]}"
+
+
+def analisador_json_tela(request):
+    return render(request, 'financeiro/analisar_json.html')
+
+
+# =========================================================================
+# INTEGRAÇÃO DA TELA DE CHAT RAG (ETAPA 3)
+# =========================================================================
+def chat_rag_tela(request):
+    return render(request, 'financeiro/chat.html')

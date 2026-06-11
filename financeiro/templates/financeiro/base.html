@@ -14,63 +14,108 @@
         :root {
             --verde-principal: #2e7d32;
             --verde-claro: #e8f5e9;
-            --cinza-fundo: #f5f5f5;
+            --cinza-fundo: #f8f9fa;
         }
 
         body {
             padding-right: 0px !important;
             background-color: var(--cinza-fundo);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            visibility: hidden; /* Evita flash de conteúdo sem estilo */
         }
 
-        .banner-cashflow {
-            border: 2px solid #333;
-            background: white;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            box-shadow: inset 0 0 10px rgba(46, 125, 50, 0.1);
+        #wrapper {
+            display: flex;
+            width: 100%;
         }
 
-        .banner-cashflow h1 {
+        #sidebar-wrapper {
+            width: 280px;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            background-color: #ffffff;
+            border-right: 1px solid #dee2e6;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            padding: 30px 20px;
+        }
+
+        #sidebar-wrapper .sidebar-title {
             color: var(--verde-principal);
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 2px;
-            margin: 0;
+            text-align: center;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px dashed var(--verde-claro);
+        }
+
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            color: #495057;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
+        }
+
+        .menu-link:hover {
+            background-color: var(--verde-claro);
+            color: var(--verde-principal);
+        }
+
+        .menu-link.active-menu {
+            background-color: var(--verde-principal) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(46, 125, 50, 0.15);
+        }
+
+        #page-content-wrapper {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            padding: 40px;
+            min-height: 100vh;
         }
 
         .card-custom {
-            border: 1px solid #333;
+            border: 1px solid #dee2e6;
             background: white;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            min-height: 200px;
+            padding: 25px;
+            margin-bottom: 25px;
+            min-height: auto;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
             transition: box-shadow 0.3s ease, border-color 0.3s ease;
         }
 
         .card-title-custom {
             color: var(--verde-principal);
-            font-weight: 600;
+            font-weight: 700;
             border-bottom: 2px dashed var(--verde-claro);
             padding-bottom: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .btn-verde {
             background-color: var(--verde-principal);
             color: white;
-            border: 1px solid #222;
+            border: 1px solid #1b5e20;
         }
 
         .btn-verde:hover {
             background-color: #1b5e20;
-            color: white;
-        }
-
-        .table-verde thead {
-            background-color: #4caf50;
             color: white;
         }
 
@@ -89,36 +134,82 @@
         html {
             overflow-y: scroll;
         }
+
+        @media (max-width: 992px) {
+            #wrapper {
+                flex-direction: column;
+            }
+            #sidebar-wrapper {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+                padding: 20px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            }
+            #sidebar-wrapper .sidebar-title {
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+            }
+            .menu-list {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+            .menu-link {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            #page-content-wrapper {
+                margin-left: 0;
+                width: 100%;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="container-fluid mt-4">
-        <div class="row justify-content-center">
-
-            <div class="col-12 col-md-11 col-lg-11">
-
-                <div class="banner-cashflow">
-                    <h1>CASHFLOW</h1>
-                </div>
-
-                {% if messages %}
-                    <div class="messages mb-3">
-                        {% for message in messages %}
-                            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% block content %}
-                {% endblock %}
-
+    <div id="wrapper">
+        <!-- Sidebar Fixo -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-title">
+                <h4 class="m-0 font-weight-bold">CASHFLOW</h4>
             </div>
+            <div class="menu-list">
+                <a href="{% url 'listar_lancamentos' %}?todos=true" class="menu-link {% if request.resolver_match.url_name == 'listar_lancamentos' or request.resolver_match.url_name == 'gerar_parcelas' %}active-menu{% endif %}">
+                    <span>📊</span> Tela Principal
+                </a>
+                <a href="{% url 'interpretar_pdf' %}" class="menu-link {% if request.resolver_match.url_name == 'interpretar_pdf' %}active-menu{% endif %}">
+                    <span>📄</span> Extrator de NF
+                </a>
+                <a href="{% url 'analisador_json_tela' %}" class="menu-link {% if request.resolver_match.url_name == 'analisador_json_tela' %}active-menu{% endif %}">
+                    <span>🔍</span> Analisador de JSON
+                </a>
+                <a href="{% url 'chat_rag' %}" class="menu-link {% if request.resolver_match.url_name == 'chat_rag' %}active-menu{% endif %}">
+                    <span>🤖</span> Busca RAG
+                </a>
+            </div>
+        </div>
 
+        <!-- Conteúdo Principal -->
+        <div id="page-content-wrapper">
+            {% if messages %}
+                <div class="messages mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
         </div>
     </div>
 

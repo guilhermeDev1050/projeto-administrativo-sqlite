@@ -1,0 +1,90 @@
+{% extends 'financeiro/base.html' %}
+
+{% block content %}
+<div class="card-custom shadow-sm">
+    <h5 class="card-title-custom">Análise e Extração de Notas Fiscais (Agente Gemini)</h5>
+    
+    <p class="text-muted small">
+        Faça o upload do documento fiscal em formato PDF. O agente inteligente irá ler, extrair as informações estruturadas e classificar a despesa automaticamente.
+    </p>
+
+    <!-- Form de Upload -->
+    <form method="post" enctype="multipart/form-data" action="" class="row g-3 mt-2">
+        {% csrf_token %}
+        <div class="col-md-8">
+            <label for="pdf_file" class="form-label font-weight-bold">Selecione o arquivo da Nota Fiscal (PDF):</label>
+            <input type="file" id="pdf_file" name="file_pdf" accept="application/pdf" class="form-control" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" id="btn-processar" class="btn btn-verde w-100 fw-bold py-2">
+                Processar com Agente Gemini
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if dados_extraidos or error %}
+<div class="card-custom shadow-sm mt-4">
+    <h5 class="card-title-custom">Resultado da Extração</h5>
+
+    {% if error %}
+        <div class="alert alert-danger shadow-sm d-flex align-items-center gap-2" role="alert">
+            <span class="fs-5">⚠️</span>
+            <div><strong>Falha no Processamento:</strong> {{ error }}</div>
+        </div>
+    {% else %}
+        <div class="alert alert-success shadow-sm d-flex align-items-center gap-2 mb-4" role="alert">
+            <span class="fs-5">✅</span>
+            <div>Extração e Classificação concluídas com sucesso!</div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Coluna de Classificação Detectada -->
+            {% if classificacao %}
+            <div class="col-12">
+                <div class="p-3 rounded border" style="border: 2px dashed #198754 !important; background-color: #f1fbf7;">
+                    <h6 class="fw-bold text-success mb-2" style="font-size: 0.95rem;">Classificação do Registro:</h6>
+                    <p class="mb-1 text-dark"><strong>Categoria Sugerida:</strong> {{ classificacao.categoria }}</p>
+                    <p class="mb-0 text-muted small"><strong>Termos Chave Detectados:</strong> {{ classificacao.termos_detectados|join:", " }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Coluna JSON Completo -->
+            <div class="col-12">
+                <label class="form-label font-weight-bold text-muted small uppercase">Dados Estruturados em JSON:</label>
+                <div class="position-relative">
+                    <pre class="bg-light p-3 rounded border text-dark overflow-auto shadow-inner" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; max-height: 450px;">{{ dados_extraidos }}</pre>
+                    <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" onclick="copiarJson(this)">Copiar JSON</button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let btn = document.getElementById('btn-processar');
+        if (btn) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processando IA...';
+            btn.disabled = true;
+        }
+    });
+
+    function copiarJson(botao) {
+        const preElement = botao.previousElementSibling;
+        const texto = preElement.textContent;
+        navigator.clipboard.writeText(texto).then(() => {
+            botao.textContent = "Copiado!";
+            botao.classList.remove('btn-outline-secondary');
+            botao.classList.add('btn-success', 'text-white');
+            setTimeout(() => {
+                botao.textContent = "Copiar JSON";
+                botao.classList.remove('btn-success', 'text-white');
+                botao.classList.add('btn-outline-secondary');
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

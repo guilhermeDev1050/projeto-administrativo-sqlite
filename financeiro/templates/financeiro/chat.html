@@ -1,164 +1,171 @@
-<!DOCTYPE html>
+{% extends 'financeiro/base.html' %}
 
-<html lang="pt-BR">
+{% block content %}
+<div class="card-custom shadow-sm">
+    <h5 class="card-title-custom">Consulta RAG Inteligente</h5>
+    <p class="text-muted small">
+        Selecione a abordagem desejada do RAG para interagir com o auditor inteligente do sistema.
+    </p>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta RAG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-blue-100 text-gray-100 font-sans min-h-screen flex flex-col">
-
-    <header class="bg-blue-800 p-4">
-        <div class="max-w-5xl flex justify-between items-left">
-            <h1 class="text-xl font-bold text-white flex items-left gap-2"> Consulta | RAG </h1>
+    <!-- Abordagem do RAG -->
+    <div class="row g-3">
+        <!-- RAG Simples -->
+        <div class="col-md-6">
+            <div class="card p-3 h-100 border cursor-pointer select-card" id="card-simples" onclick="selecionarMetodo('simples')">
+                <div class="d-flex align-items-start gap-2">
+                    <input type="radio" name="metodo" id="radio-simples" value="simples" checked class="mt-1" style="accent-color: var(--verde-principal);">
+                    <div>
+                        <label for="radio-simples" class="fw-bold text-dark d-block mb-1 cursor-pointer">RAG Simples</label>
+                        <span class="text-muted small d-block">Consulta metadados textuais via filtros SQL padrão e formata a resposta usando LLM.</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </header>
 
-    <main class="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
-
-        <section class="bg-gray-300 p-5 rounded-xl border border-gray-700 shadow-md">
-
-            <h2 class="text-lg font-semibold mb-3 text-black">1. Selecione a Abordagem do RAG</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <label class="flex items-start gap-3 p-4 bg-white border border-black rounded-lg cursor-pointer bg-gray-750/30 id-metodo" id="label-simples">
-                    <input type="radio" name="metodo" value="simples" checked class="mt-1 accent-teal-500" onclick="alternarMetodo('simples')">
+        <!-- RAG Embeddings -->
+        <div class="col-md-6">
+            <div class="card p-3 h-100 border cursor-pointer select-card" id="card-embeddings" onclick="selecionarMetodo('embeddings')">
+                <div class="d-flex align-items-start gap-2">
+                    <input type="radio" name="metodo" id="radio-embeddings" value="embeddings" class="mt-1" style="accent-color: var(--verde-principal);">
                     <div>
-                        <span class="font-bold text-black block">RAG Simples</span>
-                        <span class="text-xs text-black">Consulta metadados textuais via filtros SQL padrão e formata a resposta via LLM.</span>
+                        <label for="radio-embeddings" class="fw-bold text-dark d-block mb-1 cursor-pointer">RAG Embeddings</label>
+                        <span class="text-muted small d-block">Realiza busca semântica por vetores matemáticos de proximidade contextual.</span>
                     </div>
-                </label>
-
-                <label class="flex items-start gap-3 p-4 bg-white border border-black rounded-lg cursor-pointer hover:bg-gray-750 transition id-metodo" id="label-embeddings">
-                    <input type="radio" name="metodo" value="embeddings" class="mt-1 accent-teal-500" onclick="alternarMetodo('embeddings')">
-                    <div>
-                        <span class="font-bold text-black block">RAG Embeddings</span>
-                        <span class="text-xs text-black">Realiza busca semântica por vetores matemáticos de proximidade contextual.</span>
-                    </div>
-                </label>
-
-            </div>
-
-        </section>
-
-        <section class="bg-gray-300 flex-1 p-5 rounded-xl border border-gray-700 shadow-md flex flex-col gap-4 min-h-[400px]">
-            <h2 class="text-lg font-semibold text-black">2. Central de Perguntas Inteligentes</h2>
-
-            <div class="flex gap-2">
-                <input type="text" id="pergunta" placeholder="Ex: Quanto foi gasto com o fornecedor Junco ou qual nota vence em Março?"
-                       class="flex-1 bg-white text-gray-900 placeholder-gray-500 border border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-600 transition">
-                <button onclick="enviarPergunta()" id="btn-enviar"
-                        class="bg-blue-800 hover:bg-blue-800 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow transition flex items-center gap-2">
-                    <span>Consultar</span>
-                </button>
-            </div>
-
-            <div class="flex-1 bg-white border border-gray-700 rounded-lg p-5 mt-2 flex flex-col">
-                <span class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">Resposta Inteligente da IA:</span>
-
-                <div id="loading" class="hidden flex flex-col items-center justify-center flex-1 gap-2 py-12">
-                    <div class="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-sm text-gray-400">O Gemini está analisando os dados do banco e formalizando a resposta...</p>
-                </div>
-
-                <div id="box-resposta" class="text-blue-800 text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto">
-                    Aguardando sua pergunta. Digite um questionamento sobre as notas ou parcelas salvas no banco de dados acima e clique em "Consultar".
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
+</div>
 
-    <script>
-        // Função para mudar a cor das bordas dos cards ao selecionar o método
-        function alternarMetodo(metodo) {
-            const labelSimples = document.getElementById('label-simples');
-            const labelEmbeddings = document.getElementById('label-embeddings');
+<div class="card-custom shadow-sm mt-4">
+    <h5 class="card-title-custom">Central de Perguntas Inteligentes</h5>
+    
+    <div class="input-group mb-4 shadow-sm">
+        <input type="text" id="pergunta" placeholder="Ex: Quanto foi gasto com o parceiro COMIGO ou qual nota vence em Março?"
+               class="form-control py-3 px-4" style="font-size: 0.95rem;">
+        <button onclick="enviarPergunta()" id="btn-enviar" class="btn btn-verde fw-bold px-4" type="button">
+            Consultar
+        </button>
+    </div>
 
-            if (metodo === 'simples') {
-                // Destaca o Simples
-                labelSimples.classList.add('border-blue-600', 'border-2');
-                labelSimples.classList.remove('border-black');
-                // Reseta o Embeddings
-                labelEmbeddings.classList.add('border-black');
-                labelEmbeddings.classList.remove('border-blue-600', 'border-2');
-            } else {
-                // Destaca o Embeddings
-                labelEmbeddings.classList.add('border-blue-600', 'border-2');
-                labelEmbeddings.classList.remove('border-black');
-                // Reseta o Simples
-                labelSimples.classList.add('border-black');
-                labelSimples.classList.remove('border-blue-600', 'border-2');
-            }
+    <div class="border rounded p-4 bg-light flex-column d-flex position-relative" style="min-height: 250px;">
+        <span class="text-muted small fw-bold uppercase tracking-wider mb-2 d-block border-bottom pb-2">Resposta Inteligente da IA</span>
+
+        <!-- Loading -->
+        <div id="loading" class="d-none text-center py-5 flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+            <div class="spinner-border text-success mb-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="text-muted small">O Gemini está analisando os dados do banco e formalizando a resposta...</div>
+        </div>
+
+        <!-- Resposta -->
+        <div id="box-resposta" class="text-dark small leading-relaxed whitespace-pre-wrap flex-grow-1 overflow-auto" style="line-height: 1.6; max-height: 400px;">
+            Aguardando sua pergunta. Digite um questionamento sobre as notas ou parcelas salvas no banco de dados acima e clique em "Consultar".
+        </div>
+    </div>
+</div>
+
+<style>
+    .select-card {
+        transition: all 0.2s ease-in-out;
+        border-width: 2px !important;
+    }
+    .select-card:hover {
+        border-color: var(--verde-principal) !important;
+        background-color: #f7faf8;
+    }
+    .card-selected {
+        border-color: var(--verde-principal) !important;
+        background-color: var(--verde-claro) !important;
+    }
+    .cursor-pointer {
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    // Inicialização da borda de seleção nos cards
+    document.addEventListener("DOMContentLoaded", function() {
+        selecionarMetodo('simples');
+    });
+
+    function selecionarMetodo(metodo) {
+        const cardSimples = document.getElementById('card-simples');
+        const cardEmbeddings = document.getElementById('card-embeddings');
+        const radioSimples = document.getElementById('radio-simples');
+        const radioEmbeddings = document.getElementById('radio-embeddings');
+
+        if (metodo === 'simples') {
+            radioSimples.checked = true;
+            cardSimples.classList.add('card-selected');
+            cardEmbeddings.classList.remove('card-selected');
+        } else {
+            radioEmbeddings.checked = true;
+            cardEmbeddings.classList.add('card-selected');
+            cardSimples.classList.remove('card-selected');
+        }
+    }
+
+    async function enviarPergunta() {
+        const inputPergunta = document.getElementById('pergunta');
+        const btnEnviar = document.getElementById('btn-enviar');
+        const boxResposta = document.getElementById('box-resposta');
+        const loading = document.getElementById('loading');
+
+        const perguntaTexto = inputPergunta.value.trim();
+        const metodoSelecionado = document.querySelector('input[name="metodo"]:checked').value;
+
+        if (!perguntaTexto) {
+            alert("Por favor, digite uma pergunta antes de enviar.");
+            return;
         }
 
-        async function enviarPergunta() {
-            const inputPergunta = document.getElementById('pergunta');
-            const btnEnviar = document.getElementById('btn-enviar');
-            const boxResposta = document.getElementById('box-resposta');
-            const loading = document.getElementById('loading');
+        boxResposta.classList.add('d-none');
+        loading.classList.remove('d-none');
+        btnEnviar.disabled = true;
 
-            const perguntaTexto = inputPergunta.value.trim();
-            const metodoSelecionado = document.querySelector('input[name="metodo"]:checked').value;
+        try {
+            // Requisição com URL relativa da API unificada do Django
+            const response = await fetch('/financeiro/api/consulta-rag/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    pergunta: perguntaTexto,
+                    metodo: metodoSelecionado
+                })
+            });
 
-            if (!perguntaTexto) {
-                alert("Por favor, digite uma pergunta antes de enviar.");
+            if (!response.ok) {
+                const erroDados = await response.json().catch(() => null);
+                if (erroDados) {
+                    boxResposta.textContent = `Erro do Servidor: ${erroDados.error || erroDados.message}`;
+                    return;
+                }
+                boxResposta.textContent = `Erro HTTP: Status ${response.status}`;
                 return;
             }
 
-            boxResposta.classList.add('hidden');
-            loading.classList.remove('hidden');
-            btnEnviar.disabled = true;
-            btnEnviar.classList.add('opacity-50');
+            const dados = await response.json();
+            boxResposta.textContent = dados.resposta;
 
-            try {
-                // Ajustado para incluir os headers de CORS exigidos pelo Django REST Framework
-                const response = await fetch('http://localhost:8001/api/consulta-rag/', {
-                    method: 'POST',
-                    mode: 'cors', // Força o modo Cross-Origin
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        pergunta: perguntaTexto,
-                        metodo: metodoSelecionado
-                    })
-                });
-
-                // Se o Django devolveu erro estruturado, capturamos aqui antes de estourar o JSON
-                if (!response.ok) {
-                    const erroDados = await response.json().catch(() => null);
-                    if (erroDados) {
-                        boxResposta.textContent = `Erro do Servidor: ${erroDados.error || erroDados.message}`;
-                        return;
-                    }
-                    boxResposta.textContent = `Erro HTTP: Status ${response.status}`;
-                    return;
-                }
-
-                const dados = await response.json();
-                boxResposta.textContent = dados.resposta;
-
-            } catch (error) {
-                boxResposta.textContent = `Erro de Processamento: O servidor Django recusou a conexão ou retornou um formato inválido. Detalhe: ${error.message}`;
-            } finally {
-                loading.classList.add('hidden');
-                boxResposta.classList.remove('hidden');
-                btnEnviar.disabled = false;
-                btnEnviar.classList.remove('opacity-50');
-            }
+        } catch (error) {
+            boxResposta.textContent = `Erro de Processamento: O servidor Django recusou a conexão ou retornou um formato inválido. Detalhe: ${error.message}`;
+        } finally {
+            loading.classList.add('d-none');
+            boxResposta.classList.remove('d-none');
+            btnEnviar.disabled = false;
         }
+    }
 
-        // Permitir enviar a pergunta apertando a tecla Enter
-        document.getElementById('pergunta').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                enviarPergunta();
-            }
-        });
-    </script>
-</body>
-</html>
+    // Permitir enviar a pergunta apertando a tecla Enter
+    document.getElementById('pergunta').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            enviarPergunta();
+        }
+    });
+</script>
+{% endblock %}

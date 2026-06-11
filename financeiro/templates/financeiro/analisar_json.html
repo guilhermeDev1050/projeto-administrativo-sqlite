@@ -1,0 +1,189 @@
+{% extends 'financeiro/base.html' %}
+
+{% block content %}
+<div class="card-custom shadow-sm">
+    <h5 class="card-title-custom">Análise de Dados em JSON de NF-e</h5>
+    <p class="text-muted small">
+        Cole o JSON estruturado que foi extraído na etapa anterior para verificar a existência de cadastros e persistir a nota fiscal no banco de dados.
+    </p>
+
+    <!-- Entrada de Texto -->
+    <div class="mb-3">
+        <textarea id="json-input" class="form-control mb-3" rows="18"
+            placeholder="Cole aqui o JSON estruturado..." style="font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem;"></textarea>
+    </div>
+    
+    <button onclick="analisarDados()" id="btn-analisar" class="btn btn-verde w-100 fw-bold py-2 shadow-sm">
+        Analisar Dados da Consulta
+    </button>
+</div>
+
+<!-- Relatório de Validação (Oculto até a análise) -->
+<div id="relatorio" class="card-custom shadow-sm mt-4 d-none">
+    <h5 class="card-title-custom">Relatório de Validação Cadastral</h5>
+
+    <div id="card-resultado" class="row g-3">
+        <!-- Fornecedor -->
+        <div class="col-md-4">
+            <div class="p-3 rounded border h-100 bg-light">
+                <span class="text-muted small fw-bold uppercase d-block mb-2">Fornecedor (Emitente):</span>
+                <div class="fw-bold text-dark" id="nome-fornecedor"></div>
+                <div class="small text-muted mb-2" id="doc-fornecedor"></div>
+                <span class="badge px-3 py-2 rounded-pill" id="status-fornecedor"></span>
+            </div>
+        </div>
+
+        <!-- Faturado -->
+        <div class="col-md-4">
+            <div class="p-3 rounded border h-100 bg-light">
+                <span class="text-muted small fw-bold uppercase d-block mb-2">Faturado (Destinatário):</span>
+                <div class="fw-bold text-dark" id="nome-faturado"></div>
+                <div class="small text-muted mb-2" id="doc-faturado"></div>
+                <span class="badge px-3 py-2 rounded-pill" id="status-faturado"></span>
+            </div>
+        </div>
+
+        <!-- Classificação -->
+        <div class="col-md-4">
+            <div class="p-3 rounded border h-100 bg-light">
+                <span class="text-muted small fw-bold uppercase d-block mb-2">Classificação de Despesa:</span>
+                <div class="fw-bold text-dark" id="desc-despesa"></div>
+                <div class="small text-muted mb-2">&nbsp;</div>
+                <span class="badge px-3 py-2 rounded-pill" id="status-despesa"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ação de Gravação -->
+    <div class="mt-4 text-center border-top pt-3">
+        <button onclick="salvarNF()" id="btn-salvar" class="btn btn-success fw-bold px-5 py-2 shadow">
+            Salvar Registro Financeiro
+        </button>
+    </div>
+</div>
+
+<script>
+    let dadosParaSalvar = null;
+
+    async function analisarDados() {
+        const campoTexto = document.getElementById('json-input').value;
+        const btnAnalisar = document.getElementById('btn-analisar');
+
+        if (!campoTexto) {
+            alert("Por favor, cole o JSON para continuar.");
+            return;
+        }
+
+        try {
+            dadosParaSalvar = JSON.parse(campoTexto);
+        } catch (e) {
+            alert("Erro: O texto colado não é um JSON válido. Verifique se faltam chaves ou vírgulas.");
+            return;
+        }
+
+        btnAnalisar.disabled = true;
+        btnAnalisar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analisando...';
+
+        try {
+            // Chamando a API local do django de forma relativa
+            const response = await fetch('/financeiro/api/verificar-nf/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(dadosParaSalvar)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                exibirRelatorio(data);
+            } else {
+                alert("Erro no Servidor: " + (data.error || "Erro desconhecido"));
+            }
+        } catch (error) {
+            alert("Erro de comunicação com o servidor.");
+        } finally {
+            btnAnalisar.disabled = false;
+            btnAnalisar.textContent = "Analisar Dados da Consulta";
+        }
+    }
+
+    function exibirRelatorio(data) {
+        document.getElementById('relatorio').classList.remove('d-none');
+
+        // Fornecedor
+        document.getElementById('nome-fornecedor').innerText = data.fornecedor.nome;
+        document.getElementById('doc-fornecedor').innerText = "CNPJ: " + dadosParaSalvar.Fornecedor.CNPJ;
+        
+        const sForn = document.getElementById('status-fornecedor');
+        sForn.innerText = data.fornecedor.status;
+        if (data.fornecedor.status.includes('NÃO')) {
+            sForn.className = "badge bg-danger text-white px-3 py-2 rounded-pill";
+        } else {
+            sForn.className = "badge bg-primary text-white px-3 py-2 rounded-pill";
+        }
+
+        // Faturado
+        document.getElementById('nome-faturado').innerText = data.faturado.nome;
+        const docFat = dadosParaSalvar.Faturado.CPF || dadosParaSalvar.Faturado.CNPJ;
+        document.getElementById('doc-faturado').innerText = "Doc: " + docFat;
+
+        const sFat = document.getElementById('status-faturado');
+        sFat.innerText = data.faturado.status;
+        if (data.faturado.status.includes('NÃO')) {
+            sFat.className = "badge bg-danger text-white px-3 py-2 rounded-pill";
+        } else {
+            sFat.className = "badge bg-primary text-white px-3 py-2 rounded-pill";
+        }
+
+        // Despesa
+        document.getElementById('desc-despesa').innerText = data.despesa.descricao;
+        
+        const sDesp = document.getElementById('status-despesa');
+        sDesp.innerText = data.despesa.status;
+        if (data.despesa.status.includes('NÃO')) {
+            sDesp.className = "badge bg-danger text-white px-3 py-2 rounded-pill";
+        } else {
+            sDesp.className = "badge bg-primary text-white px-3 py-2 rounded-pill";
+        }
+        
+        // Faz um scroll suave até o relatório
+        document.getElementById('relatorio').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function salvarNF() {
+        if (!dadosParaSalvar) return;
+        
+        const btnSalvar = document.getElementById('btn-salvar');
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Salvando...';
+
+        try {
+            // Chamando a API de gravação do Django de forma relativa
+            const response = await fetch('/financeiro/api/salvar-nf/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(dadosParaSalvar)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("✅ " + data.message);
+                // Redireciona para a tela de lançamentos com todos=true
+                window.location.href = "/financeiro/lancamentos/?todos=true";
+            } else {
+                alert("❌ Erro ao salvar: " + (data.message || "Erro desconhecido"));
+            }
+        } catch (error) {
+            alert("🚨 Falha na comunicação com a API Django.");
+        } finally {
+            btnSalvar.disabled = false;
+            btnSalvar.textContent = "Salvar Registro Financeiro";
+        }
+    }
+</script>
+{% endblock %}

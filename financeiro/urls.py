@@ -13,4 +13,12 @@ urlpatterns = [
     path('alterar/<int:movimento_id>/', views.alterar_lancamento, name='alterar_lancamento'),
     path('lancamentos/excluir/<int:movimento_id>/', views.excluir_lancamento, name='excluir_lancamento'),
     path('parcelas/<int:pk>/', views.listar_lancamentos, name='gerar_parcelas'),
+
+    # Telas integradas
+    path('chat/', views.chat_rag_tela, name='chat_rag'),
+    path('analisador/', views.analisador_json_tela, name='analisador_json_tela'),
+
+    # APIs REST do analisador de JSON
+    path('api/verificar-nf/', views.VerificarDadosNFView.as_view(), name='verificar_nf'),
+    path('api/salvar-nf/', views.SalvarDadosNFView.as_view(), name='salvar_nf'),
 ]
