@@ -7,6 +7,9 @@
         Cole o JSON estruturado que foi extraído na etapa anterior para verificar a existência de cadastros e persistir a nota fiscal no banco de dados.
     </p>
 
+    <!-- Feedback Container (Bootstrap alerts) -->
+    <div id="alert-container"></div>
+
     <!-- Entrada de Texto -->
     <div class="mb-3">
         <textarea id="json-input" class="form-control mb-3" rows="18"
@@ -65,19 +68,38 @@
 <script>
     let dadosParaSalvar = null;
 
+    function showAlert(message, type = 'danger') {
+        const container = document.getElementById('alert-container');
+        const icon = type === 'success' ? '✅' : '⚠️';
+        
+        container.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-3" role="alert">
+                <span class="fs-5">${icon}</span>
+                <div>${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearAlert() {
+        document.getElementById('alert-container').innerHTML = '';
+    }
+
     async function analisarDados() {
         const campoTexto = document.getElementById('json-input').value;
         const btnAnalisar = document.getElementById('btn-analisar');
 
         if (!campoTexto) {
-            alert("Por favor, cole o JSON para continuar.");
+            showAlert("Por favor, cole o JSON para continuar.", "warning");
             return;
         }
 
         try {
             dadosParaSalvar = JSON.parse(campoTexto);
+            clearAlert();
         } catch (e) {
-            alert("Erro: O texto colado não é um JSON válido. Verifique se faltam chaves ou vírgulas.");
+            showAlert("O texto colado não é um JSON válido. Verifique se faltam chaves ou vírgulas.", "danger");
             return;
         }
 
@@ -97,12 +119,13 @@
             const data = await response.json();
 
             if (response.ok) {
+                clearAlert();
                 exibirRelatorio(data);
             } else {
-                alert("Erro no Servidor: " + (data.error || "Erro desconhecido"));
+                showAlert("Erro no Servidor: " + (data.error || "Erro desconhecido"), "danger");
             }
         } catch (error) {
-            alert("Erro de comunicação com o servidor.");
+            showAlert("Erro de comunicação com o servidor.", "danger");
         } finally {
             btnAnalisar.disabled = false;
             btnAnalisar.textContent = "Analisar Dados da Consulta";
@@ -172,14 +195,12 @@
             const data = await response.json();
 
             if (response.ok) {
-                alert("✅ " + data.message);
-                // Redireciona para a tela de lançamentos com todos=true
-                window.location.href = "/financeiro/lancamentos/?todos=true";
+                showAlert(data.message, "success");
             } else {
-                alert("❌ Erro ao salvar: " + (data.message || "Erro desconhecido"));
+                showAlert("Erro ao salvar: " + (data.message || "Erro desconhecido"), "danger");
             }
         } catch (error) {
-            alert("🚨 Falha na comunicação com a API Django.");
+            showAlert("Falha na comunicação com a API Django.", "danger");
         } finally {
             btnSalvar.disabled = false;
             btnSalvar.textContent = "Salvar Registro Financeiro";

@@ -1,7 +1,7 @@
 import json
 import re
 import PyPDF2
-import google.generativeai as genai
+from google import genai
 from django.conf import settings
 
 
@@ -10,8 +10,7 @@ class Agent1:
 
     def __init__(self):
         """Inicializa o agente com as configurações do Gemini"""
-        genai.configure(api_key=settings.GEMINI_EXTRATOR_API_KEY)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.client = genai.Client(api_key=settings.GEMINI_EXTRATOR_API_KEY)
 
     def validar_dados_extraidos(self, dados):
         """Valida e sanitiza os dados extraídos da IA"""
@@ -208,7 +207,21 @@ Texto:
 {texto}
 """
 
-            response = self.model.generate_content(prompt)
+            try:
+                response = self.client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt,
+                )
+            except Exception as e:
+                erro_str = str(e)
+                # Se o modelo gemini-2.5-flash estiver temporariamente sobrecarregado (503), tenta o gemini-2.5-flash-lite como fallback
+                if "503" in erro_str or "demand" in erro_str or "UNAVAILABLE" in erro_str:
+                    response = self.client.models.generate_content(
+                        model='gemini-2.5-flash-lite',
+                        contents=prompt,
+                    )
+                else:
+                    raise e
             dados_extraidos = self.processar_resposta_ia(response.text)
 
             return {

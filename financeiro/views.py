@@ -192,10 +192,20 @@ class ConsultaRAGView(APIView):
         )
 
         try:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt_sistema,
-            )
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt_sistema,
+                )
+            except Exception as e:
+                erro_str = str(e)
+                if "503" in erro_str or "demand" in erro_str or "UNAVAILABLE" in erro_str:
+                    response = client.models.generate_content(
+                        model='gemini-2.5-flash-lite',
+                        contents=prompt_sistema,
+                    )
+                else:
+                    raise e
             return Response({"resposta": response.text}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": f"Erro na API do Gemini durante a generation: {str(e)}"},
