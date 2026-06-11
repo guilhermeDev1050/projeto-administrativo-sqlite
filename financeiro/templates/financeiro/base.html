@@ -180,7 +180,7 @@
                 <h4 class="m-0 font-weight-bold">CASHFLOW</h4>
             </div>
             <div class="menu-list">
-                <a href="{% url 'listar_lancamentos' %}?todos=true" class="menu-link {% if request.resolver_match.url_name == 'listar_lancamentos' or request.resolver_match.url_name == 'gerar_parcelas' %}active-menu{% endif %}">
+                <a href="{% url 'listar_lancamentos' %}" class="menu-link {% if request.resolver_match.url_name == 'listar_lancamentos' or request.resolver_match.url_name == 'gerar_parcelas' %}active-menu{% endif %}">
                     <span>📊</span> Tela Principal
                 </a>
                 <a href="{% url 'listar_pessoas' %}" class="menu-link {% if request.resolver_match.url_name == 'listar_pessoas' or request.resolver_match.url_name == 'incluir_pessoa' or request.resolver_match.url_name == 'alterar_pessoa' or request.resolver_match.url_name == 'excluir_pessoa' %}active-menu{% endif %}">
