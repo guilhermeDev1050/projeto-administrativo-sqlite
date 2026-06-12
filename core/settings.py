@@ -83,12 +83,8 @@ import os
 # Configuração Nativa e Dinâmica para o Docker
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'cashflow_db',
-        'USER': 'yago_user',
-        'PASSWORD': 'password123',
-        'HOST': 'projeto_final_db',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
